@@ -1,0 +1,243 @@
+\documentclass[13pt]{res}
+
+\usepackage[letterpaper, top=0.7in]{geometry}
+
+\usepackage[table]{xcolor}
+\usepackage{float}
+\usepackage{longtable}
+
+\usepackage{pgf}
+\usepackage{pgfpages}
+
+\pgfpagesdeclarelayout{boxed}
+{
+    \edef\pgfpageoptionborder{0pt}
+    }
+{
+    \pgfpagesphysicalpageoptions
+      {%
+            logical pages=1,%
+              }
+        \pgfpageslogicalpageoptions{1}
+          {
+                border code=\pgfsetlinewidth{2pt}\pgfstroke,%
+                    border shrink=\pgfpageoptionborder,%
+                        resized width=.85\pgfphysicalwidth,%
+                            resized height=.95\pgfphysicalheight,%
+                                center=\pgfpoint{.45\pgfphysicalwidth}{.5\pgfphysicalheight}%
+                                  }%
+          }
+
+\pgfpagesuselayout{boxed}
+
+\newenvironment{list1}{
+%%  \begin{list}{\ding{113}}{%
+  \begin{list}{\ding{113}}{%      
+      \setlength{\itemsep}{0in}
+      \setlength{\parsep}{0in} \setlength{\parskip}{0in}
+      \setlength{\topsep}{0in} \setlength{\partopsep}{0in} 
+      \setlength{\leftmargin}{0in}}}{\end{list}}
+\newenvironment{list2}{
+  \begin{list}{$\bullet$}{%
+      \setlength{\itemsep}{0in}
+      \setlength{\parsep}{0in} \setlength{\parskip}{0in}
+      \setlength{\topsep}{0in} \setlength{\partopsep}{0in} 
+      \setlength{\leftmargin}{0.2in}}}{\end{list}}
+
+<<<loaddata, echo=FALSE, message=FALSE>>=
+subgroup <- SiteMetrics[ SiteMetrics$SiteID == site,]
+@ 
+
+\begin{document}
+<<<setup, echo=FALSE>>=
+options(warn=-1)
+opts_chunk$set(fig.path = paste("test", site , sep=""))
+library("xtable")
+###library("RMySQL")
+suppressMessages( library("RMySQL") )
+con <- dbConnect(RMySQL::MySQL(), dbname = "cirt", username = "", password = "", host = "")
+#dat <- dbGetQuery( con, "SELECT SiteID, PatientID, VisitOfLastTARun from TAReports LIMIT 20;" )
+#str( dat )
+PI <- dbGetQuery( con, paste( "SELECT LastName, FirstName from PiCoordsContactEDC WHERE SiteID = \'", site, " \' AND isThisMostRecent = 1 AND Role = 'PI';", sep ="" ))
+#str( PI )
+clinic <- dbGetQuery( con, paste( "SELECT City, State, Country from clinic WHERE SiteID = '", site,"';", sep = "" ) )
+#str( clinic )
+SiteMetrics <- dbGetQuery( con, paste( "SELECT * from removeME WHERE SiteID = '", site,"' AND isThisMostRecent = 1;", sep ="") )
+
+dummy <- dbDisconnect(con)
+#str( SiteMetrics )
+###print(xtable(dat, caption = "HP table"))
+#Subjects <- read.csv("/media/CirtDCC/HenryP/SubjectStatusReport.csv", header = TRUE)
+#Subjects <- read.csv("/media/CirtDCC/HenryP/pats$SubjectStatusTemplate.csv", header = TRUE)
+#Subjects <- read.csv("/media/CirtDCC/HenryP/SubjectStatus_Oct2015.csv", header = TRUE)
+#Subjects <- read.csv("pats20151130.csv", header = TRUE)
+#Subjects <- read.csv("/media/CirtDCC/HenryP/SiteStatusReport/pats20160108.csv", header = TRUE)
+#Subjects <- read.csv("/media/CirtDCC/HenryP/SiteStatusReport/pats20160129.csv", header = TRUE)
+#Subjects <- read.csv("/media/CirtDCC/HenryP/SiteStatusReport/pats20160226.csv", header = TRUE)
+#Subjects <- read.csv("/media/CirtDCC/HenryP/SiteStatusReport/pats20160429.csv", header = TRUE)
+#Subjects <- read.csv("/media/CirtDCC/HenryP/SiteStatusReport/pats20160603.csv", header = TRUE)
+#Subjects <- read.csv("/media/CirtDCC/HenryP/SiteStatusReport/pats20160701.csv", header = TRUE)
+#Subjects <- read.csv("/media/CirtDCC/HenryP/SiteStatusReport/pats20160729.csv", header = TRUE)
+#Subjects <- read.csv("/media/CirtDCC/HenryP/SiteStatusReport/pats20160902.csv", header = TRUE)
+#Subjects <- read.csv("/media/CirtDCC/HenryP/SiteStatusReport/pats20160930.csv", header = TRUE)
+Subjects <- read.csv("/media/CirtDCC/HenryP/SiteStatusReport/pats20161104.csv", header = TRUE)
+
+## Subjects[ Subjects$bckt == "1_OnDrug" | Subjects$bckt == "2_TA", c("reason") ] = "Doing well"
+
+reasons <- as.character(Subjects$reason)
+reasons [ which ( Subjects$bckt == "1_OnDrug" | Subjects$bckt == "2_TA") ] = "Doing well"
+reasons [ reasons == "Medical Monitor" ] = "Contraindication to Study Drug"
+reasons [ reasons == "Adjudicated" ] = "Primary Endpoint (Adjudicated)"
+reasons [ reasons == "Death" ] = "Primary Endpoint (Death)"
+reasons [ reasons == "MI" ] = "MI: Currently in the adjudication process"
+reasons [ reasons == "Stroke" ] = "Stroke: Currently in the adjudication process"
+Subjects <- cbind( Subjects, reasons )
+
+tmp <- Subjects[ Subjects$centno == site, ]
+## tmp[ tmp$reason == "Medical Monitor", c("reason") ] = "Contraindication to Study Drug"
+## tmp[ tmp$reason == "Adjudicated", c("reason") ] = "Primary Endpoint (Adjudicated)"
+## tmp[ tmp$reason == "Death", c("reason") ] = "Primary Endpoint (Death)"
+tmp <- tmp[ order( tmp$pid ), ]
+##str(Subjects)
+@ 
+
+\includegraphics[width=5in]{LogoCIRT_1.jpg}
+
+\begin{center}
+\textbf{ {\LARGE Site Status Report} }
+\end{center}
+%%Some infomative text about hospital \Sexpr{site}
+
+\begin{list1}
+\item[] Principal Investigator: Dr. \Sexpr{ PI$FirstName } \Sexpr{ PI$LastName }
+\item[] Site ID: \Sexpr{ site }
+\item[] Site Location: \Sexpr{ clinic$City }, \Sexpr{ clinic$State }, \Sexpr{ clinic$Country }
+%\item[] Initialization: \Sexpr{ format( as.Date( SiteMetrics$SiteInitializationDate), '%m/%d/%Y' ) }
+\item[] Initialization: \Sexpr{ SiteMetrics$SiteInitializationDate }
+\item[] Site Liaison: \Sexpr{ SiteMetrics$Liaison }
+\end{list1}
+
+
+
+\section{\sc Site Metrics}
+\vspace{0.05in}
+\begin{tabular} {@{}p{1.5in}p{2.5in}}
+  Consented:  \Sexpr{ SiteMetrics$NInformedConsent } & \\
+  %% Screened: \Sexpr{ SiteMetrics$NScreened } & Date of last Screened: \Sexpr{ format( as.Date( SiteMetrics$MostRecentScreeningDate), '%m/%d/%Y') }\\
+  %% Entered Run-in: \Sexpr{ SiteMetrics$NStartedRunIn } & Date of last Run-in: \Sexpr{ format( as.Date( SiteMetrics$MostRecentEnrollmentDate), '%m/%d/%Y') }\\
+  %% Randomized: \Sexpr{ SiteMetrics$NRandomized } & Date of last Randomized: \Sexpr{ format( as.Date( SiteMetrics$MostRecentRandomizedDate), '%m/%d/%Y') }\\
+      Screened: \Sexpr{ SiteMetrics$NScreened } & Date of last Screened: \Sexpr{  SiteMetrics$MostRecentScreeningDate }\\
+  Entered Run-in: \Sexpr{ SiteMetrics$NStartedRunIn } & Date of last Run-in: \Sexpr{ SiteMetrics$MostRecentEnrollmentDate }\\
+  Randomized: \Sexpr{ SiteMetrics$NRandomized } & Date of last Randomized: \Sexpr{  SiteMetrics$MostRecentRandomizedDate }\\
+\end{tabular}
+  
+\section{ \textbf {\large Post Randomized Subjects' Status} }
+
+\rule{16cm}{.1pt}
+\section{\sc On Drug}  
+\vspace{0.05in}
+  \rowcolors{1}{lightgray}{white}
+<<OnDrug, echo=FALSE, include=TRUE, results="asis">>=
+#print(xtable(dat[,-1], caption="On Drug"), caption.placement = "top", include.rownames = FALSE)
+#onDrug <- xtable( dat[1:15, -1], caption = "On Drug")
+#onDrug <- xtable( tmp[ tmp$bckt == "1_OnDrug" | tmp$bckt == "2_TA", c("pid", "reasons") ] , caption = "On Drug")
+onDrug <- tmp[ tmp$bckt == "1_OnDrug" | tmp$bckt == "2_TA", c("pid", "reason") ]
+
+###str( onDrug )
+
+if ( dim(onDrug)[1] == 0 ) {
+     onDrug <- rbind( onDrug, c("N/A", "") )
+ }
+
+colnames(onDrug) <- c("Subject ID", "Note")
+onDrug <- xtable( onDrug )
+##onDrug <- xtable( dat[1:15, -1] )
+#align(onDrug) <- "|l{5cm}|p{2cm}|l{2cm}|"
+#align(onDrug) <- "|l|l|l|"
+align(onDrug) <- "@{}p{2.5in}p{2.5in}"
+#print(xtable(dat[1:15,-1]), include.rownames = FALSE)
+#print(onDrug, include.rownames = FALSE, caption.placement = "top")
+print(onDrug, include.rownames = FALSE, caption.placement = "top", tabular.environment="longtable", floating=FALSE)
+@
+
+\rule{16cm}{.1pt}
+\section{\sc Primary Endpoint / Contraindication to Study Drug}  
+\vspace{0.05in}
+\rowcolors{1}{lightgray}{white}
+<<nonRecPS, echo=FALSE, include=TRUE, results="asis">>=
+#print(xtable(dat[,-1], caption="On Drug"), caption.placement = "top", include.rownames = FALSE)
+nrPS <- tmp[ tmp$subBckt == "S_Medical Monitor" | tmp$subBckt == "Q_AdjDeath" | tmp$subBckt == "R_OtherDeath"  | tmp$subBckt == "P_Adjudicated", c("pid", "reason") ]
+if ( dim(nrPS)[1] == 0 ) {
+     nrPS <- rbind( nrPS, c("N/A", "") )
+}
+                                        
+## str( nrPS )
+colnames(nrPS) <- c("Subject ID", "Note")
+#nrPS <- xtable( nrPS , caption = "Primary Endpoint / Contraindication to Study Drug")
+nrPS <- xtable( nrPS )
+align(nrPS) <- "@{}p{2.5in}p{2.5in}"
+print( nrPS , include.rownames = FALSE, caption.placement = "top")
+@ 
+
+\rule{16cm}{.1pt}
+\section{\sc Temporary Stops}  
+\vspace{0.05in}
+\rowcolors{1}{lightgray}{white}
+<<TS, echo=FALSE, include=TRUE, results="asis">>=
+#print(xtable(dat[,-1], caption="On Drug"), caption.placement = "top", include.rownames = FALSE)
+TempStop <- tmp[ tmp$bckt == "4_TempStop" | tmp$subBckt == "M_MI" | tmp$subBckt == "N_Stroke", c("pid", "reason") ]
+if ( dim(TempStop)[1] == 0 ) {
+    TempStop <- rbind( TempStop, c("N/A", "") )
+}
+colnames(TempStop) <- c("Subject ID", "Note")
+#TempStop <- xtable( TempStop, caption = "Temporary Stops", table.placement ="!h" )
+TempStop <- xtable( TempStop ) 
+align(TempStop) <- "@{}p{2.5in}p{2.5in}"
+print( TempStop , include.rownames = FALSE, caption.placement = "top")
+@ 
+
+\rule{16cm}{.1pt}
+\section{\sc ``Permanent Stops'' for Uncertain Reason}  
+\vspace{0.05in}
+\rowcolors{1}{lightgray}{white}
+<<PS, echo=FALSE, include=TRUE, results="asis">>=
+#print(xtable(dat[,-1], caption="On Drug"), caption.placement = "top", include.rownames = FALSE)
+PermStop <- tmp[  tmp$subBckt == "O_Withdrawn" | tmp$subBckt == "L_By Study Drug Discontinuation Form", c("pid", "reason") ]
+if ( dim(PermStop)[1] == 0 ) {
+    PermStop <- rbind( PermStop, c("N/A", "") )
+}
+colnames(PermStop) <- c("Subject ID", "Note")
+#PermStop <- xtable( PermStop, caption = "\"Permanent Stops\" for Uncertain Reason", table.placement ="!h" )
+PermStop <- xtable( PermStop ) 
+align(PermStop) <- "@{}p{2.5in}p{2.5in}"
+print( PermStop , include.rownames = FALSE, caption.placement = "top")
+@
+
+\rule{16cm}{.1pt}
+
+\section{\sc Missed Visits}  
+\vspace{0.05in}
+\rowcolors{1}{lightgray}{white}
+<<MissedVisits, echo=FALSE, include=TRUE, results="asis">>=
+#print(xtable(dat[,-1], caption="On Drug"), caption.placement = "top", include.rownames = FALSE)
+MissedVisits <- tmp[ tmp$bckt == "3_MissedVisit"  , c("pid", "reason")]
+if ( dim(MissedVisits)[1] == 0 ) {
+    MissedVisits <- rbind( MissedVisits, c("N/A", "") )
+}
+
+colnames( MissedVisits ) <- c("Subject ID", "Note")
+# MissedVisits <- xtable( MissedVisits , caption = "Missed Visits", table.placement ="!th" )
+MissedVisits <- xtable( MissedVisits )
+align(MissedVisits) <- "@{}p{2.5in}p{2.5in}"
+print( MissedVisits , include.rownames = FALSE, caption.placement = "top")
+@
+
+%% <<<plots, echo=FALSE >>=
+%%   for(ward in unique(subgroup$Ward)){
+%%           subgroup2 <- subgroup[subgroup$Ward == ward,]
+%%               #     subgroup2 <- subgroup2[ order(subgroup2$Month),]
+%%               savename <- paste(hosp, ward)
+%%               plot(subgroup2$Month, subgroup2$Outcomes, type="o", main=paste("Trend plot for", savename))
+%%             }
+%% @ 
+\end{document}
