@@ -1,0 +1,18 @@
+
+##### prep the database table removeME from SiteMetrics where isCurrent = 1 ## old
+# now: perl script to directly populate reamoveME table from Kristin's excel file
+# update RA names with full name
+
+# prep the input file from pats.csv file
+# mid(E2, 3, 10)
+# according to the bckt and subBckt
+# update input data file name in hptest1.Rnw
+
+Rscript wrapper.R # this runs hptest1.Rnw to generate tex files and pdf files
+
+### rm Site*.pdf # no need because pdf files are not generated.
+
+sed -i 's/\\begin'{'table'}'\[ht\]//g' *.tex
+sed -i 's/\\end'{'table'}'//g' *.tex
+
+./loopFile.sh
